@@ -1,10 +1,11 @@
 # escape=`
 
 FROM microsoft/windowsservercore
+ARG BUILDNUMBER
 
 # Manufacturer information
-LABEL "com.swyx.vendor"="Swyx Solutions AG"
-LABEL description="SwyxWare Docker Image"
+LABEL com.swyx.description="SwyxWare Docker Image" 
+LABEL com.swyx.swyxwarebuild=${BUILDNUMBER} 
 
 # Variables
 ENV SQLSERVERINSTANCE="" SQLADMINUSER="" SQLADMINPASSWORD="" SQLIPPBXDATABASENAME="" SQLIPPBXUSER="" SQLIPPBXPASSWORD="" IPPBXADMINUSER="" IPPBXADMINPASSWORD="" VERBOSE=""
@@ -28,9 +29,8 @@ WORKDIR /
 # Startup script
 CMD powershell c:/start.ps1 -SqlServerInstance %SQLSERVERINSTANCE% -SqlAdminUser %SQLADMINUSER% -SqlAdminPassword %SQLADMINPASSWORD% -SqlIpPbxDatabaseName %SQLIPPBXDATABASENAME% -SqlIpPbxUser %SQLIPPBXUSER% -SqlIpPbxPassword %SQLIPPBXPASSWORD% -IpPbxAdminUser %IPPBXADMINUSER% -IpPbxAdminPassword %IPPBXADMINPASSWORD% -VerboseMode %VERBOSE%
 
-# Remove install files and logs
-RUN rmdir /S /Q C:\Install 
-#RUN rmdir /S /Q C:\Install && rmdir /S /Q C:\ProgramData\Swyx\Traces && rmdir /S /Q C:\ProgramData\Swyx\MemoryDumps
+# Remove installation files and logs
+RUN rmdir /S /Q C:\Install && rmdir /S /Q C:\ProgramData\Swyx\Traces && rmdir /S /Q C:\ProgramData\Swyx\MemoryDumps 
 
-# Some data must be persisted via docker volumes
-#VOLUME C:/ProgramData/Swyx/Traces/ C:/ProgramData/Swyx/MemoryDumps/ C:/ProgramData/Swyx/CDRs/ C:/ProgramData/Swyx/Licenses/
+# Some data must be persisted
+VOLUME C:/ProgramData/Swyx/Traces/ C:/ProgramData/Swyx/MemoryDumps/ C:/ProgramData/Swyx/CDRs/ C:/ProgramData/Swyx/Licenses/
