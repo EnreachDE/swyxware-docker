@@ -49,7 +49,7 @@ $SQLAdminPassword     = "" # will be prompted or set from given SqlCredentials
 
 $SqlExpressContainerImageName        = "microsoft/mssql-server-windows-express:latest"
 $WindowsServerCoreContainerImageName = "microsoft/windowsservercore"
-$SwyxWareContainerImageName          = "swyx/swyxware-cpe:latest"
+$SwyxWareContainerImageName          = "swyx/swyxware-cpe:11.00"
 $HostDataFolder                      = join-path ([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonApplicationData)) "Swyx"
 $ContainerDataFolder                 = $HostDataFolder
 

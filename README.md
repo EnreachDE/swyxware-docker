@@ -64,7 +64,7 @@ Instead of mapping host folders you can create named docker volumes like this:
 
 then specify the volumes on the docker run command line
 
-(Note: The commandline omits specifying required environment variables, network name, container and host name for brevity)
+(Note: The commandline omits to specify required environment variables, network name, container and host name for brevity)
 
     docker run --volume ippbxtraces:c:\ProgramData\Swyx\Traces --volume ippbxdumps:c:\ProgramData\Swyx\MemoryDumps --volume ippbxlicenses:c:\ProgramData\Swyx\Licenses --volume ippbxcdrs:c:\ProgramData\Swyx\CDRs swyx/swyxware-cpe:11.00
 
