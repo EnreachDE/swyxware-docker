@@ -435,37 +435,36 @@ else {
 }
 remove-item -LiteralPath $RedirectOutputFile -Force | out-null
 
+#The container has started and is initialising. This takes some minutess
+Add-LogMessage -Level Info -Message "SwyxWare is being configured. This may take a while..."
+$InitialisationStatus = "configuring"
+while($InitialisationStatus -eq "configuring")
+{
     
-    #The container has started and is initialising. This takes some minutess
-    Add-LogMessage -Level Info -Message "SwyxWare is being configured. This may take a while..."
-    $InitialisationStatus = "configuring"
-    while($InitialisationStatus -eq "configuring")
+    Start-Sleep -Seconds 10
+    $ContainerLogLastLines = docker container logs --tail 20 $IpPbxContainerName
+    if ($ContainerLogLastLines -match "Configuration completed") 
     {
-        
-        Start-Sleep -Seconds 10
-        $ContainerLogLastLines = docker container logs --tail 5 $IpPbxContainerName
-        if ($ContainerLogLastLines -match "Configuration completed") 
-        {
-            $InitialisationStatus = "finished"
-        }
-        elseif ($ContainerLogLastLines -match"IpPbxConfig failed")
-        {
-            $InitialisationStatus = "error"
-        }        
+        $InitialisationStatus = "finished"
     }
+    elseif ($ContainerLogLastLines -match"IpPbxConfig failed")
+    {
+        $InitialisationStatus = "error"
+    }        
+}
 
-    if($InitialisationStatus -ne "finished")
-    {
-        docker container logs $IpPbxContainerName > $RedirectOutputFile
-        Add-LogFromFile -Level Info -FilePath $RedirectOutputFile
-        Remote-item $RedirectOutputFile -force
+if($InitialisationStatus -ne "finished")
+{
+    docker container logs $IpPbxContainerName > $RedirectOutputFile
+    Add-LogFromFile -Level Info -FilePath $RedirectOutputFile
+    Remote-item $RedirectOutputFile -force
 
-        throw "The SwyxWare configuration of '$($ContainerName)' failed."
-    }
-    else
-    {
-        Add-LogMessage -Level Info -Message "SwyxWare container '$IpPbxContainerName' has been configured successfully."
-    }
+    throw "The SwyxWare configuration of '$($ContainerName)' failed."
+}
+else
+{
+    Add-LogMessage -Level Info -Message "SwyxWare container '$IpPbxContainerName' has been configured successfully."
+}
 
 
 # Stop the logging
