@@ -2,12 +2,12 @@
 .SYNOPSIS
     Deploys SwyxWare + SQLExpress as docker container
 .PARAMETER ContainerSubnet
-    Subnet of the container (CIDR) notation, e.g. 192.168.100.0/28. This has to be the same or smaller than the host subnet
+    Subnet of the container in CIDR notation, e.g. 192.168.100.0/28. This has to be the same or smaller subnet than the host
 .PARAMETER ContainerDefaultGateway
     Default Gateway IP address to be used for the container. This should be identical to the host's default gateway
 .PARAMETER SqlServerInstanceName
     Name of an existing SQLServer instance to be used. Specify sysadmin credentials via parameter SqlAdminCredentials for admin access to
-    that instance. Leave empty create a SqlExpress container
+    that instance. Leave empty to create a SqlExpress container
 .PARAMETER SQLContainerIPAddress
     IP address to assign to the SQLExpress container. Has to be in the ContainerSubnet
 .PARAMETER IpPBxContainerIPAddress
@@ -19,9 +19,9 @@
     SwyxWare Administrator username and password. A SwyxWare user with system administrator rights will be created if
     a new swyxware database is created during deployment.
 .PARAMETER DockerHubCredentials
-    hub.docker.com credential to access a private repository. 
+    hub.docker.com credentials to access a private repository. 
 .PARAMETER LogfilePath
-    Logfile path and filename. Uses console logging if paramter is not set     
+    Logfile path and filename. Uses console logging if parameter is not set     
 #>
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
@@ -40,7 +40,7 @@ param(
 # Get script path 
 $scriptFolder = (Split-Path $MyInvocation.MyCommand.Path -Parent)
 
-# some defaults
+# Some defaults
 $ContainerNetworkName = "ippbxnet"
 $SQLContainerName     = "ippbxdb"
 $IpPbxContainerName   = "ippbx01"
@@ -50,12 +50,12 @@ $SQLAdminPassword     = "" # will be prompted or set from given SqlCredentials
 $SqlExpressContainerImageName        = "microsoft/mssql-server-windows-express:latest"
 $WindowsServerCoreContainerImageName = "microsoft/windowsservercore"
 $SwyxWareContainerImageName          = "swyx/swyxware-cpe:11.00"
-$HostDataFolder                      = join-path ([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonApplicationData)) "Swyx"
+$HostDataFolder                      = Join-Path ([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonApplicationData)) "Swyx"
 $ContainerDataFolder                 = $HostDataFolder
 
-$RedirectOutputFile = join-path $Env:TEMP docker-out.log
+$RedirectOutputFile = Join-Path $Env:TEMP docker-out.log
 
-#Function to Test the DatabaseConnection (Also used in the SwyxWare Docker container)
+# Function to Test the DatabaseConnection (Also used in the SwyxWare Docker container)
 function Test-DatabaseConnection
 {
     param([parameter(Mandatory=$true)][string]$ServerInstance,
@@ -101,7 +101,7 @@ function Test-DatabaseConnection
 
     if (!($connected))
     { 
-        Add-LogMessage -Level Error -Message "Database connection could not be established please check your Parameters"
+        Add-LogMessage -Level Error -Message "Database connection could not be established please check your parameters"
         return $false
     }
     else
@@ -115,7 +115,7 @@ function Get-DockerImage
 {
     param($ImageName)
 
-    Add-LogMessage -Level Info -Message "Pulling $ImageName Container image."
+    Add-LogMessage -Level Info -Message "Pulling $ImageName container image."
     
     docker pull $ImageName
 
@@ -125,12 +125,10 @@ function Get-DockerImage
     }     
 }
 
-
 if (!((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)))
 {
     Add-LogMessage -Level Error -ThrowException -Message  "This script needs to be run elevated, i.e. with local administrator privileges."
 }
-
 
 # Initialise logging
 if (!$LogfilePath) {
@@ -144,7 +142,7 @@ if (!(Test-Path -Path $logDirectoryPath))
     New-Item -Path $logDirectoryPath -ItemType Directory -ErrorAction Stop | Out-Null    
 }
 
-. (join-path $scriptFolder "Resources\Init-Logging.ps1")
+. (Join-Path $scriptFolder "Resources\Init-Logging.ps1")
 
 $logThreshold = [log4net.Core.Level]::Info
 if ($VerbosePreference -eq "Continue") {
@@ -162,10 +160,7 @@ Add-LogMessage -Level Verbose -Message "SqlContainerName:    '$SQLContainerName'
 Add-LogMessage -Level Verbose -Message "IpPbxContainerName:  '$IpPbxContainerName'"
 Add-LogMessage -Level Verbose -Message "SQLAdminName:        '$SQLAdminName'"
 
-
-
-#Checking if Docker module is installed.
-
+# Check if Docker module is installed
 if ($PSCmdLet.ShouldProcess("Container Support","Install Windows Feature"))
 {
     if (Get-PackageProvider -Name DockerMsftProvider -ErrorAction SilentlyContinue) {
@@ -194,7 +189,7 @@ if ($PSCmdLet.ShouldProcess("Container Support","Install Windows Feature"))
 }
 
 
-if($RestartRequired)
+if ($RestartRequired)
 {
     Add-LogMessage -Level Info -Message "A system restart is required to enable Windows Container support."
     if ($PSCmdLet.ShouldContinue("Restart computer to enable Windows Container support.", "Restart required"))
@@ -208,11 +203,11 @@ if($RestartRequired)
         return
     }
 
-    start-service -Name Docker
+    Start-Service -Name Docker
 }
 
 
-# Create Docker Network
+# Create Docker network
 $NetworkID = docker network ls --filter "name=$ContainerNetworkName" --no-trunc --quiet
 if ($NetworkID)
 {
@@ -222,7 +217,7 @@ if ($NetworkID)
 }
 else
 {
-    if(!($ContainerSubnet))
+    if (!($ContainerSubnet))
     {
         $OwnIPAddresses = @(Get-NetIPAddress -AddressFamily IPv4 -Type Unicast -AddressState Preferred | Where-Object { $_.SuffixOrigin -ne "WellKnown" -and ($_.InterfaceAlias -notmatch "vEthernet" -or $_.InterfaceAlias -match "vEthernet \(HNSTransparent") })
         $OWnIPAddresses | foreach-object { Add-LogMessage -Level Verbose -Message "Found own IP: $($_.IPAddress)" }
@@ -234,7 +229,7 @@ else
         Add-LogMessage -Level Verbose -Message "ContainerNetwork Subnet $ContainerSubnet"
     }
 
-    if(!($ContainerDefaultGateway))
+    if (!($ContainerDefaultGateway))
     {
         $OwnIPConfiguration = @(Get-NetIPConfiguration  | Where-Object { $_.InterfaceAlias -notmatch "vEthernet" } )
         if ($OwnIPConfiguration.Count -eq 1) {
@@ -254,7 +249,7 @@ else
         }
         else
         {
-            # if network has just been created, it make take a while until Window regain connectivity
+            # If network has just been created, it make take a while until Windows regains connectivity
             $Retries = 5
             while ($retries-- -and -not (Get-NetIPConfiguration | Where-Object { $_.IPv4Address.ipAddress -eq "10.211.55.21" })) {
                     start-sleep -Seconds 5
@@ -264,7 +259,7 @@ else
     }
 }
 
-# pull windows server core base image
+# Pull Windows Server core base image
 Get-DockerImage -ImageName $WindowsServerCoreContainerImageName
 
 #SQL Server Configuration
@@ -282,7 +277,7 @@ if ($SQLContainerID) {
 }
 else
 {
-    if(!$SQLServerInstance)
+    if (!$SQLServerInstance)
     {
         $SQLServerInstance = Read-Host 'Enter the SQL Server instance to use. Leave empty to run a SQLExpress container []'
        
@@ -292,7 +287,7 @@ else
 
     if (!$SqlAdminCredentials) {
         $DefaultSqlAdminName = $SQLAdminName
-        $SQLAdminName = Read-Host "Please enter your SQL Server Admin Username '[$DefaultSqlAdminName]'"
+        $SQLAdminName = Read-Host "Please enter your SQL Server admin username '[$DefaultSqlAdminName]'"
         if (!$SQLAdminName) { $SQLAdminName = $DefaultSqlAdminName }
         $SQLAdminPassword = Read-Host -assecurestring 'Enter the password of the SQL '$SqlAdminName' user'
     }
@@ -303,13 +298,13 @@ else
     }
     Add-LogMessage -Level Verbose -Message "Using SQL admin '$SqlAdminName'."
 
-    #No SQL Server available. Create one via Docker Container
-    if(!$SQLServerInstance)
+    # No SQL Server available. Create one via Docker Container
+    if (!$SQLServerInstance)
     {
-        Add-LogMessage -Level Info -Message "Pulling SQL Server Container image."
-    	Get-DockerImage -ImageName $SqlExpressContainerImageName 
+        Add-LogMessage -Level Info -Message "Pulling SQL Server container image."
+        Get-DockerImage -ImageName $SqlExpressContainerImageName 
     
-        if(!$SQLContainerIP)
+        if (!$SQLContainerIP)
         {
             $SQLContainerIP = Read-Host 'Enter the static IP address for the SQL Server container'
         }
@@ -318,7 +313,7 @@ else
         
         docker container rm --force $SQlContainerName  
 
-        $PlainTextSQlPassword = (new-object "PSCredential" -ArgumentList "user",$SQLAdminPassword).GetNetworkCredential().Password
+        $PlainTextSQlPassword = (New-Object "PSCredential" -ArgumentList "user",$SQLAdminPassword).GetNetworkCredential().Password
         docker run -d --network=$ContainerNetworkName --ip $SQLContainerIP --hostname $SQlContainerName --name $SQlContainerName -e SA_PASSWORD=$PlainTextSQlPassword -e ACCEPT_EULA=Y $SqlExpressContainerImageName  | Tee-Object -LiteralPath $RedirectOutputFile 
         $DockerRunResult = $LASTEXITCODE
         $PlainTextSQlPassword = $null
@@ -333,37 +328,36 @@ else
             Add-LogMessage -Level Info -Message "SQL Container started"
             Add-LogFromFile -Level Info -FilePath $RedirectOutputFile 
         }
-        remove-item -LiteralPath $RedirectOutputFile -Force | out-null
+        Remove-Item -LiteralPath $RedirectOutputFile -Force | Out-Null
 
         $SQLServerInstance = "$SQlContainerName\SqlExpress"            
     }
 }
 
-#Testing Database Connection
-if (! (Test-DatabaseConnection -ServerInstance $SqlServerInstance -AdminUser $SQLAdminName -AdminPassword $SqlAdminPassword)) {
+# Testing Database Connection
+if (!(Test-DatabaseConnection -ServerInstance $SqlServerInstance -AdminUser $SQLAdminName -AdminPassword $SqlAdminPassword)) {
     Add-LogMessage -Level Error -ThrowException -Message "Cannot connect to SQL server."
 }
 
+# SwyxWare Docker container
 
-#SwyxWare Docker Container
-
-#If the SwyxWare Docker Image is not public, log in to Docker Hub
-if($DockerHubCredentials)
+# If the SwyxWare Docker image is not public, log in to Docker Hub
+if ($DockerHubCredentials)
 {
     #Login to Docker Hub
     $loggedin = $false
-    while(!$loggedin)
+    while (!$loggedin)
     {
         Add-LogMessage -Level Info -Message "Logging on to Docker Hub..."
         $PlainTextPassword = $DockerHubCredentials.GetNetworkCredential().Password
-        docker login -u $DockerHubCredentials.UserName -p $PlainTextPassword   	
+        docker login -u $DockerHubCredentials.UserName -p $PlainTextPassword
         if ($LASTEXITCODE -ne 0)
         {
-    	    throw "Login failed"
+            throw "Login failed"
         }
         else
         {
-    	    Add-LogMessage -Level Info -Message "Login succeeded"
+            Add-LogMessage -Level Info -Message "Login succeeded"
             $loggedin = $true
         }
     }
@@ -382,12 +376,12 @@ elseif ($ExistingIpPbxContainer)
     return
 }
 
-#Pull SwyxWare Docker Image
+# Pull SwyxWare Docker image
 Get-DockerImage -ImageName $SwyxWareContainerImageName
 
-if(!$IpPbxContainerIP)
+if (!$IpPbxContainerIP)
 {
-    $IpPbxContainerIP = Read-Host 'Please enter a valid IP address for the SwyxWare Server container'
+    $IpPbxContainerIP = Read-Host 'Please enter a valid IP address for the SwyxWare server container'
 }
 
 if (!$IpPbxAdminCredentials) {
@@ -395,11 +389,11 @@ if (!$IpPbxAdminCredentials) {
 }
 
 
-# make sure the host data folders which are mapped into the container exist
-mkdir -Path $HostDataFolder\Traces -Force | out-null
-mkdir -Path $HostDataFolder\MemoryDumps -Force | out-null
-mkdir -Path $HostDataFolder\Licenses -Force | out-null
-mkdir -Path $HostDataFolder\CDRs -Force | out-null
+# Make sure the host data folders which are mapped into the container do exist
+mkdir -Path $HostDataFolder\Traces -Force | Out-Null
+mkdir -Path $HostDataFolder\MemoryDumps -Force | Out-Null
+mkdir -Path $HostDataFolder\Licenses -Force | Out-Null
+mkdir -Path $HostDataFolder\CDRs -Force | Out-Null
 
 
 $ArgumentList = @(
@@ -422,25 +416,24 @@ $ArgumentList = @(
     $SwyxWareContainerImageName
 )     
 
-$p = start-process -NoNewWindow -Wait -PassThru -FilePath "docker.exe" -ArgumentList $ArgumentList -RedirectStandardError $RedirectOutputFile
+$p = Start-Process -NoNewWindow -Wait -PassThru -FilePath "docker.exe" -ArgumentList $ArgumentList -RedirectStandardError $RedirectOutputFile
 
 if ($p.ExitCode -ne 0)
 {   
     Add-LogFromFile -Level Error -FilePath $RedirectOutputFile 
     remove-item -LiteralPath $RedirectOutputFile -Force
-    throw "SwyxWare Server container could not be started. Docker run command stopped with exit code '$($p.ExitCode)'."
+    throw "SwyxWare server container could not be started. Docker run command stopped with exit code '$($p.ExitCode)'."
 }
 else {
-    Add-LogMessage -Level Info -Message "SwyxWare Container started"
+    Add-LogMessage -Level Info -Message "SwyxWare container started"
 }
 remove-item -LiteralPath $RedirectOutputFile -Force | out-null
 
-#The container has started and is initialising. This takes some minutess
+# The container has started and is initialising. This takes some minutes.
 Add-LogMessage -Level Info -Message "SwyxWare is being configured. This may take a while..."
 $InitialisationStatus = "configuring"
-while($InitialisationStatus -eq "configuring")
+while ($InitialisationStatus -eq "configuring")
 {
-    
     Start-Sleep -Seconds 10
     $ContainerLogLastLines = docker container logs --tail 20 $IpPbxContainerName
     if ($ContainerLogLastLines -match "Configuration completed") 
@@ -453,11 +446,11 @@ while($InitialisationStatus -eq "configuring")
     }        
 }
 
-if($InitialisationStatus -ne "finished")
+if ($InitialisationStatus -ne "finished")
 {
     docker container logs $IpPbxContainerName > $RedirectOutputFile
     Add-LogFromFile -Level Info -FilePath $RedirectOutputFile
-    Remote-item $RedirectOutputFile -force
+    Remove-Item $RedirectOutputFile -Force
 
     throw "The SwyxWare configuration of '$($ContainerName)' failed."
 }
@@ -465,7 +458,6 @@ else
 {
     Add-LogMessage -Level Info -Message "SwyxWare container '$IpPbxContainerName' has been configured successfully."
 }
-
 
 # Stop the logging
 Add-LogMessage -Level Info -Message "May the force be with you ;-)"
