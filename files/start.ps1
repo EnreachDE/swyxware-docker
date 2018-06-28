@@ -104,7 +104,7 @@ function Update-UnattendedXml
     # Do the update
     Write-Host "Updating parameter values..."
 
-    $xmlData.IpPbxConfiguration.mode="manual"
+    $xmlData.IpPbxConfiguration.mode = "manual"
 
     $parameterUpdateList | ForEach-Object {
 
@@ -137,7 +137,7 @@ function Update-LicenseLocation
                                -Name $licenseLocationRegKeyName `
                                -ErrorAction SilentlyContinue
 
-    # Check if the license location registry key exist
+    # Check if the license location registry key exists
     if (!$regKey)
     {    
     
@@ -207,7 +207,7 @@ $ErrorActionPreference = 'Stop';
 # Check if container is already configured
 if (Test-Path "C:\AlreadyConfigured.dat")
 {
-    Write-Host "Container is already configured. Lets keep it alive..."
+    Write-Host "Container is already configured. Let’s keep it alive..."
     Do-KeepAlive
 }
    
