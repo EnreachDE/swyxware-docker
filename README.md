@@ -1,5 +1,9 @@
 # SwyxWare 11 Docker Technology Preview
 
+> [!NOTE]
+> This repo is obsolete and will not be updated anymore. Information in this repo is probably outdated.
+
+
 This repository provides everything necessary to build a SwyxWare 11 Windows Container image. The image contains all SwyxWare services (except SwyxGate) in one image.
 
 This is a technical preview, not a production-ready version.
